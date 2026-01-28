@@ -1,13 +1,10 @@
-/**
- * Standard environment variable declarations for the compiler.
- * This fixes the 'vite/client' not found error and defines expected env vars.
- */
-declare global {
-  namespace NodeJS {
-    interface ProcessEnv {
-      readonly API_KEY: string;
-    }
-  }
+/// <reference types="vite/client" />
+
+interface ImportMetaEnv {
+  // Use VITE_ prefix so the key is available in the browser
+  readonly VITE_GEMINI_API_KEY: string;
 }
 
-export {};
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
