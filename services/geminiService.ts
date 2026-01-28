@@ -3,7 +3,7 @@ import { GoogleGenAI, Type } from "@google/genai";
 
 export const parseRawTimeData = async (text: string) => {
   const apiKey = process.env.API_KEY;
-  if (!apiKey || apiKey === 'YOUR_API_KEY_HERE') {
+  if (!apiKey || apiKey === 'AIzaSyD4OjSPkWsIxJiMfSdjHXsw6TBw9JzpA_s') {
     console.error("Gemini API Key is missing. Please set API_KEY in your environment.");
     throw new Error("API Key is missing. Check environment configuration.");
   }
