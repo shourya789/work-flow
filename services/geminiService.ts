@@ -1,46 +1,20 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 
 export const parseRawTimeData = async (text: string) => {
-  const apiKey = process.env.API_KEY;
-  if (!apiKey || apiKey === 'AIzaSyD4OjSPkWsIxJiMfSdjHXsw6TBw9JzpA_s') {
-    console.error("Gemini API Key is missing. Please set API_KEY in your environment.");
-    throw new Error("API Key is missing. Check environment configuration.");
+  // Use import.meta.env for Vite projects
+  const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+
+  if (!apiKey) {
+    console.error("Gemini API Key is missing. Ensure VITE_GEMINI_API_KEY is set in Vercel/Env.");
+    throw new Error("AI Configuration Error: API Key not found.");
   }
 
-  const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI(apiKey);
   
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: `You are a specialized data extractor for dialer performance reports. 
-      Look at the provided text and extract these 12 specific values. 
-      Note that labels and values might be squashed together.
-      
-      FIELDS TO EXTRACT:
-      1. pause: (HH:MM:SS) - Often labeled "Total Pause Time"
-      2. dispo: (HH:MM:SS) - Often labeled "Total Dispo Time"
-      3. dead: (HH:MM:SS) - Often labeled "Total Dead Time"
-      4. currentLogin: (HH:MM:SS) - Often labeled "Total Login Time" (Duration)
-      5. loginTimestamp: (HH:MM:SS) - Often labeled "Login At" or "Session Start"
-      6. logoutTimestamp: (HH:MM:SS) - Often labeled "Logout At" or "Session End"
-      7. wait: (HH:MM:SS) - Often labeled "Total Wait Time"
-      8. talk: (HH:MM:SS) - Often labeled "Total Talk Time"
-      9. hold: (HH:MM:SS) - Often labeled "Total Hold Time"
-      10. customerTalk: (HH:MM:SS) - Often labeled "Customer Talk Time"
-      11. inbound: (Integer) - Look for "Inbound Calls" count
-      12. outbound: (Integer) - Look for "Outbound Calls" count
-
-      RULES:
-      - If a time value is missing, return "00:00:00".
-      - If a call count is missing, return 0.
-      - Clean up any squashed text (e.g., "Time3:22:08" -> "03:22:08").
-      
-      TEXT TO PARSE:
-      """
-      ${text}
-      """`,
-      config: {
+    const model = ai.getGenerativeModel({
+      model: 'gemini-1.5-flash', // Standard stable model name
+      generationConfig: {
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -63,7 +37,23 @@ export const parseRawTimeData = async (text: string) => {
       }
     });
 
-    const responseText = response.text;
+    const prompt = `You are a specialized data extractor for dialer performance reports. 
+      Look at the provided text and extract these 12 specific values. 
+      Note that labels and values might be squashed together.
+      
+      RULES:
+      - If a time value is missing, return "00:00:00".
+      - If a call count is missing, return 0.
+      - Clean up any squashed text (e.g., "Time3:22:08" -> "03:22:08").
+      
+      TEXT TO PARSE:
+      """
+      ${text}
+      """`;
+
+    const result = await model.generateContent(prompt);
+    const responseText = result.response.text();
+    
     if (!responseText) {
       console.warn("AI returned empty response text");
       return null;
